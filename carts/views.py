@@ -35,5 +35,19 @@ def add_cart(request, product_id):
     return redirect("cart")
 
 
-def cart(request):
-    return render(request, "store/cart.html")
+def cart(request, total=0, quantity=0, cart_items=None):
+    try:
+        _cart = Cart.objects.get(cart_id=_cart_id(request))
+        cart_items = CartItem.objects.filter(cart=_cart, is_active=True)
+        for cart_item in cart_items:
+            total += cart_item.quantity * cart_item.product.price
+            quantity += cart_item.quantity
+    except Cart.DoesNotExist:
+        pass
+
+    context = {
+        'total': total,
+        'quantity': quantity,
+        'cart_items': cart_items,
+    }
+    return render(request, "store/cart.html", context=context)
