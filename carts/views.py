@@ -2,7 +2,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import render, redirect, get_object_or_404
 
 from carts.models import Cart, CartItem
-from store.models import Product
+from store.models import Product, Variations
 
 
 # Create your views here.
@@ -14,16 +14,27 @@ def _cart_id(request):
 
 
 def add_cart(request, product_id):
-    if request.method == 'POST':
-        color = request.POST.get('color')
-        size = request.POST.get('size')
-        print(color, size)
-
-    # get the product
     product = Product.objects.get(id=product_id)
-    try:
-        # get the cart using the cart_id present in the session
+    product_variation = []
 
+    if request.method == "POST":
+        for item in request.POST:
+            key = item
+            value = request.POST[key]
+            print(key, value)
+
+            try:
+                variation = Variations.objects.get(
+                    product=product,
+                    variation_category__iexact=key,
+                    variation_value__iexact=value,
+                )
+                product_variation.append(variation)
+                print(product_variation)
+            except:
+                pass
+
+    try:
         _cart = Cart.objects.get(cart_id=_cart_id(request))
     except Cart.DoesNotExist:
         _cart = Cart.objects.create(cart_id=_cart_id(request))
@@ -31,7 +42,7 @@ def add_cart(request, product_id):
     _cart.save()
 
     try:
-        _cart_item = CartItem.objects.get(product=product, cart=_cart)
+        _cart_item = CartItem.objects.get(product=product, quantity=1, cart=_cart)
         _cart_item.quantity += 1
     except CartItem.DoesNotExist:
         _cart_item = CartItem.objects.create(product=product, cart=_cart, quantity=1)
@@ -42,8 +53,10 @@ def add_cart(request, product_id):
 
 
 def remove_cart(request, product_id):
+
     _cart = Cart.objects.get(cart_id=_cart_id(request))
     product = get_object_or_404(Product, id=product_id)
+
     cart_item = CartItem.objects.get(product=product, cart=_cart)
     if cart_item.quantity > 1:
         cart_item.quantity -= 1
