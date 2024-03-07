@@ -14,10 +14,11 @@ def _cart_id(request):
 
 
 def add_cart(request, product_id):
-    if request.method == 'POST':
-        color = request.POST.get('color')
-        size = request.POST.get('size')
-        print(color, size)
+    if request.method == "POST":
+        for item in request.POST:
+            key = item
+            value = request.POST[key]
+            print(key, value)
 
     # get the product
     product = Product.objects.get(id=product_id)
@@ -31,7 +32,7 @@ def add_cart(request, product_id):
     _cart.save()
 
     try:
-        _cart_item = CartItem.objects.get(product=product, cart=_cart)
+        _cart_item = CartItem.objects.get(product=product, quantity=1, cart=_cart)
         _cart_item.quantity += 1
     except CartItem.DoesNotExist:
         _cart_item = CartItem.objects.create(product=product, cart=_cart, quantity=1)
@@ -42,8 +43,10 @@ def add_cart(request, product_id):
 
 
 def remove_cart(request, product_id):
+
     _cart = Cart.objects.get(cart_id=_cart_id(request))
     product = get_object_or_404(Product, id=product_id)
+
     cart_item = CartItem.objects.get(product=product, cart=_cart)
     if cart_item.quantity > 1:
         cart_item.quantity -= 1
