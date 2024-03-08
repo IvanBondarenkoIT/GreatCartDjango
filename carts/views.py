@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from carts.models import Cart, CartItem
@@ -41,18 +42,45 @@ def add_cart(request, product_id):
 
     _cart.save()
 
-    try:
-        _cart_item = CartItem.objects.get(product=product, quantity=1, cart=_cart)
-        _cart_item.quantity += 1
-    except CartItem.DoesNotExist:
+    is_cart_item_exist = CartItem.objects.filter(product=product, cart=_cart).exists()
+
+    if is_cart_item_exist:
+        _cart_item = CartItem.objects.filter(product=product, cart=_cart)
+        # existing_variations -> database
+        # current_variation -> product_variation
+        # item_id -> database
+        exist_variation_list = []
+        cart_item_id_list = []
+        for item in _cart_item:
+            existing_variation = item.variations.all()
+            exist_variation_list.append(list(existing_variation))
+            cart_item_id_list.append(item.id)
+
+        print(exist_variation_list)
+
+        if product_variation in exist_variation_list:
+            # increase the cart item quantity
+            index = exist_variation_list.index(product_variation)
+            item_id = cart_item_id_list[index]
+            item = CartItem.objects.get(product=product, id=item_id)
+            item.quantity += 1
+
+        else:
+            # create a new cart item
+            item = CartItem.objects.create(product=product, quantity=1, cart=_cart)
+            if len(product_variation) > 0:
+                item.variations.clear()
+                item.variations.add(*product_variation)
+
+        item.save()
+
+    else:
         _cart_item = CartItem.objects.create(product=product, cart=_cart, quantity=1)
 
-    if len(product_variation) > 0:
-        _cart_item.variations.clear()
-        for variation in product_variation:
-            _cart_item.variations.add(variation)
-
-    _cart_item.save()
+        if len(product_variation) > 0:
+            _cart_item.variations.clear()
+            _cart_item.variations.add(*product_variation)
+        _cart_item.save()
 
     return redirect("cart")
 
