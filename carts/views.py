@@ -30,7 +30,7 @@ def add_cart(request, product_id):
                     variation_value__iexact=value,
                 )
                 product_variation.append(variation)
-                print(product_variation)
+
             except:
                 pass
 
@@ -46,6 +46,11 @@ def add_cart(request, product_id):
         _cart_item.quantity += 1
     except CartItem.DoesNotExist:
         _cart_item = CartItem.objects.create(product=product, cart=_cart, quantity=1)
+
+    if len(product_variation) > 0:
+        _cart_item.variations.clear()
+        for variation in product_variation:
+            _cart_item.variations.add(variation)
 
     _cart_item.save()
 
