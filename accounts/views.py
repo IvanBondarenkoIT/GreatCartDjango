@@ -14,13 +14,14 @@ def register(request):
             phone_number = form.cleaned_data["phone_number"]
             email = form.cleaned_data["email"]
             password = form.cleaned_data["password"]
+            username = email
 
             user = Account.objects.create_user(
                 first_name=first_name,
                 last_name=last_name,
                 email=email,
+                username=username,
                 password=password,
-                username=email.split("@")[0],
             )
 
             user.phone_number = phone_number
