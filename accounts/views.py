@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -10,10 +11,6 @@ from django.utils.encoding import force_bytes
 
 from accounts.forms import RegistrationForm
 from accounts.models import Account
-
-
-# verification email
-
 
 
 def register(request):
@@ -51,8 +48,10 @@ def register(request):
             send_email = EmailMessage(mail_subject, message, to=[to_email])
             send_email.send()
 
-            messages.success(request, "Registration Successful")
-            return redirect("register")
+            # messages.success(request,
+            #                  f"Thank you for registration. We have sent you a verification email to {to_email}."
+            #                  f" Please verify it")
+            return redirect(f"/accounts/login/?command=verification&email={email}")
 
     else:
         form = RegistrationForm()
@@ -86,4 +85,22 @@ def logout(request):
     auth.logout(request)
     messages.success(request, "Logout Successful")
     return redirect("login")
+
+
+def activate(request, uidb64, token):
+    # return HttpResponse("OK")
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = Account._default_manager.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, Account.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, "Congratulations! Your account has been activated!")
+        return redirect("login")
+    else:
+        messages.error(request, "Invalid activation link")
+        return redirect("Register")
 
