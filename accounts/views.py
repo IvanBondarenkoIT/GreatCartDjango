@@ -199,3 +199,7 @@ def my_orders(request):
     }
     return render(request, 'accounts/my_orders.html', context=context)
 
+
+def edit_profile(request):
+    # user = Account.objects.get(pk=id)
+    return render(request, "accounts/edit_profile.html")
