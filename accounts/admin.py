@@ -19,9 +19,9 @@ class AccountAdmin(UserAdmin):
 
 class UserProfileAdmin(admin.ModelAdmin):
     def thumbnail(self, objects):
-        return format_html('<img src="{}" width="30" style="border-radius:50%">'.format(objects.projile_picture.url))
+        return format_html('<img src="{}" width="30" style="border-radius:50%">'.format(objects.profile_pic.url))
 
-    thumbnail.short_description = 'Profile Picture'
+    thumbnail.short_description = 'Profile Pic'
     list_display = ('thumbnail', 'user', 'city', 'state', 'country')
 
 
