@@ -37,7 +37,7 @@ def register(request):
 
             # Create user Profile
             profile = UserProfile.objects.create(user=user)
-            profile.profile_picture = 'default/default-user.png'
+            profile.profile_picture = "default/default-user.png"
             profile.save()
 
             # USER ACTIVATION
@@ -194,6 +194,7 @@ def reset_password(request):
         return render(request, "accounts/reset_password.html")
 
 
+@login_required(login_url="login")
 def my_orders(request):
     # orders = Order.objects.filter(user=request.user, is_ordered=True).order_by("-created_at")
     orders = {i for i in range(10)}
@@ -203,23 +204,54 @@ def my_orders(request):
     return render(request, "accounts/my_orders.html", context=context)
 
 
+@login_required(login_url="login")
 def edit_profile(request):
-    user_profile = get_object_or_404(UserProfile, user=request.user) # Get UserProfile with user==request.user
+    user_profile = get_object_or_404(
+        UserProfile, user=request.user
+    )  # Get UserProfile with user==request.user
     if request.method == "POST":
         user_form = UserForm(request.POST, instance=request.user)
-        profile_form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
+        profile_form = UserProfileForm(
+            request.POST, request.FILES, instance=user_profile
+        )
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
-            messages.success(request, 'Your profile has been updated')
-            return redirect('edit_profile')
+            messages.success(request, "Your profile has been updated")
+            return redirect("edit_profile")
     else:
         user_form = UserForm(instance=request.user)
         profile_form = UserProfileForm(instance=user_profile)
 
     context = {
-        'user_form': user_form,
-        'profile_form': profile_form,
+        "user_form": user_form,
+        "profile_form": profile_form,
     }
 
     return render(request, "accounts/edit_profile.html", context=context)
+
+
+@login_required(login_url="login")
+def change_password(request):
+    if request.method == "POST":
+        current_password = request.POST.get("current_password")
+        new_password = request.POST.get("new_password")
+        confirm_password = request.POST.get("confirm_password")
+
+        user = Account.objects.get(username__exact=request.user.username)
+
+        if new_password == confirm_password:
+            success = user.check_password(current_password)
+            if success:
+                user.set_password(new_password)
+                user.save()
+                messages.success(request, "Password updated succesfully.")
+                return redirect("change_password")
+            else:
+                messages.error(request, "Please enter correct password")
+                return redirect("change_password")
+        else:
+            messages.error(request, "Passwords do not match")
+            return redirect("change_password")
+
+    return render(request, "accounts/change_password.html", context={})
